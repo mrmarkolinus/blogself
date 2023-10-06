@@ -3,12 +3,12 @@ import openai_prompt_guy
 import openai
 import os
 
-#prova branch
-
 # OPENAI API KEY, GOOGLE API KEY AND CSE ID
 openai.api_key = os.getenv("OPENAI_TEST_KEY")
 API_KEY = os.getenv("GOOGLE_SEARCH_API_KEY")
 CSE_ID = os.getenv("GOOGLE_CSE_ID")
+
+
 
 #General artcile topic. These keyword (up to 5), will be used to search on google trends for top trend queries.
 #kw_list = ["travel", "reise", "urlaub", "hotel", "airbnb"]
