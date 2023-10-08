@@ -54,8 +54,8 @@ class EditorGPT():
 
         _input = prompt.format_prompt(article_topic=user_input_article_topic)
         llm_response = self._llm(_input.to_messages())
-        llm_response_json = self._return_json_formatted_response(llm_response)
-        return llm_response_json["article_title"], llm_response_json["seo_keywords"]
+        llm_response_json = self._parser_header.parse(llm_response.content)
+        return llm_response_json.article_title , llm_response_json.seo_keywords
 
 
     def generate_article_chapters(self, input_title, input_keywords):
@@ -70,5 +70,5 @@ class EditorGPT():
 
         _input = prompt.format_prompt(article_title=input_title, seo_keywords=input_keywords)
         llm_response = self._llm(_input.to_messages())
-        llm_response_json = self._return_json_formatted_response(llm_response)
-        return llm_response_json["article_chapters"], llm_response_json["article_chapters_header"]
+        llm_response_json = self._parser_header.parse(llm_response.content)
+        return llm_response_json.article_chapters, llm_response_json.article_chapters_header

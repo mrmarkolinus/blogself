@@ -1,5 +1,6 @@
 from langchain.chat_models import ChatOpenAI
 from editors import EditorGPT
+from writers import WriterGPT
 import os
 
 class BlogArticle():
@@ -10,9 +11,19 @@ class BlogArticle():
         self._article_topic = article_topic
 
         self._editor = self._workers["editor"](self._llm, self._article_topic)
+        self._writer = self._workers["writer"](self._llm)
 
         self._article_title, self._article_seo_keywords = self._editor.generate_article_title_and_keywords(self._article_topic)
         self._article_chapters, self._article_chapters_header = self._editor.generate_article_chapters(self._article_title, self._article_seo_keywords)
+        
+        self._chapter_content = []
+
+        for (index, _) in enumerate(self._article_chapters):
+            self._chapter_content.append(self._writer.generate_article_chapter(self._article_title, self._article_seo_keywords, 
+                                                                               self._article_chapters, self._article_chapters_header, index + 1))
+            print(self._chapter_content[index])
+        #article_text = self._writer.generate_article_chapter(self._article_title, self._article_seo_keywords, self._article_chapters, self._article_chapters_header, 2)
+        #print(article_text)
 
     def get_title(self):
         return self._article_title
@@ -32,10 +43,11 @@ class BlogArticle():
         return overview_str
 
 llm = ChatOpenAI(model_name="gpt-3.5-turbo", openai_api_key=os.getenv("OPENAI_TEST_KEY"))
-user_input_article_topic = "CAN Bus demo on Arduino"
+user_input_article_topic = "Development and evolution of minecraft in the years"
 
 workers = {}
 workers["editor"] = EditorGPT
+workers["writer"] = WriterGPT
 
 blogself = BlogArticle(llm, user_input_article_topic, workers)
 print(blogself.get_overview())
