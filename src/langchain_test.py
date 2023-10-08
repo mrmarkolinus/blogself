@@ -1,13 +1,9 @@
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, ChatMessagePromptTemplate
-#from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
-#from langchain.llms import OpenAI
-
-import os
-import json
-
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
+import os
+import json
 
 
 # Define the data structure of the article header which will contain the title and the SEO Keywords.
