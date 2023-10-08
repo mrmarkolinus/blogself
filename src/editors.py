@@ -11,8 +11,8 @@ class ArticleHeaderFormatValidator(BaseModel):
     seo_keywords: str = Field(description="SEO Keywords")
 
 class ArticleChaptersFormatValidator(BaseModel):
-    article_chapters: str = Field(description="Blog Article chapters")
-    article_chapters_header: str = Field(description="Short description of the content")
+    article_chapters: list = Field(description="Blog Article chapters")
+    article_chapters_header: list = Field(description="Short description of the content")
 
 class EditorGPT():
     _template_title_and_keywords =   """You are editorGPT, a professional blog editor with many successful blogs running. 
@@ -70,5 +70,5 @@ class EditorGPT():
 
         _input = prompt.format_prompt(article_title=input_title, seo_keywords=input_keywords)
         llm_response = self._llm(_input.to_messages())
-        llm_response_json = self._parser_header.parse(llm_response.content)
+        llm_response_json = self._parser_chapters.parse(llm_response.content)
         return llm_response_json.article_chapters, llm_response_json.article_chapters_header

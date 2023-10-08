@@ -16,7 +16,7 @@ class WriterGPT():
                                 Each chapter shall contain detailed information and practical examples if needed. Each chapter shall contain at least 2 paragraphs
                                 You always keep in mind that SEO is everything. You think step by step"""
     
-    _parser_header = PydanticOutputParser(pydantic_object=ArticleChapterFormatValidator)
+    _parser_article = PydanticOutputParser(pydantic_object=ArticleChapterFormatValidator)
 
     def __init__(self, llm):
         self._llm = llm
@@ -28,12 +28,12 @@ class WriterGPT():
             HumanMessagePromptTemplate.from_template("Title: {article_title}, SEO Keywords: {seo_keywords}, Chapters: {chapters_list}, Chapters headers: {chapters_header_list}, Chapter index: {chapter_index}")
         ],
         input_variables=["article_title", "seo_keywords", "chapters_list", "chapters_header_list", "chapter_index"],
-        partial_variables={"format_instructions": self._parser_header.get_format_instructions()}
+        partial_variables={"format_instructions": self._parser_article.get_format_instructions()}
         )
 
         _input = prompt.format_prompt(article_title=input_title, seo_keywords=input_seo_keywords, chapters_list=input_chapters_list, 
                                       chapters_header_list=input_chapters_header_list, chapter_index=input_chapter_index)
         
         llm_response = self._llm(_input.to_messages())
-        llm_response_json = self._parser_header.parse(llm_response)
+        llm_response_json = self._parser_article.parse(llm_response.content)
         return llm_response_json.article_chapter
