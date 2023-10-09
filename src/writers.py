@@ -18,7 +18,13 @@ class WriterGPT():
                                 You always keep in mind that SEO is everything. You think step by step.
                                 You MUST always output the content as JSON as described in the following lines: ."""
     
-    _template_role_user = "Write me only the content of the chapter indicated by chapter index. Use the content of the last chapter you have written to give continuity to the article and avoid repetitions."
+    _template_role_user = """Write me only the content of the chapter indicated by chapter index.
+                            Write at least 2 paragraphs, the more the better, fill the chapter of details and examples (if needed).
+                            After writing the chapter content, read it again. Check carefully if there are any errors or information missing. If so please correct it.
+                            Think step by step, your output MUST always be a JSON.
+                            Use the content of the previous chapter you have written to give continuity to the article and avoid repetitions. 
+                            Here is the content of the previous chapter:
+                            DO NOT rewrite the same content twice. Your output now MUST be different from the one of the previous chapter."""
 
     _parser_article = PydanticOutputParser(pydantic_object=ArticleChapterFormatValidator)
 

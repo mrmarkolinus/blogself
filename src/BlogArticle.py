@@ -30,7 +30,7 @@ class BlogArticle():
                                                                                self._article_chapters, self._article_chapters_header, index + 1,
                                                                                last_chapter_content))
             last_chapter_content = self._chapter_content[index]
-            log_obj.info("Chapter " + str(index + 1) + ": \"" + self._article_chapters[index] + "\" generated successfully")
+            log_obj.info("Chapter \"" + self._article_chapters[index] + "\" generated successfully")
             log_obj.info(self._chapter_content[index])
 
 
@@ -75,10 +75,10 @@ logger = logging.getLogger('blogself')
 
 logger.info("Contacting OpenAI")
 
-llm = ChatOpenAI(model_name="gpt-3.5-turbo", openai_api_key=os.getenv("OPENAI_TEST_KEY"))
+llm = ChatOpenAI(model_name="gpt-3.5-turbo", openai_api_key=os.getenv("OPENAI_TEST_KEY"), temperature=0)
 user_input_article_topic = "Minecraft developement history"
 
-logger.info("Creating the blog article with title: " + user_input_article_topic) 
+logger.info("Creating the blog article frin topic: " + user_input_article_topic) 
 blogself = BlogArticle(llm, user_input_article_topic, workers, logger)
 print(blogself.get_overview())
-print(blogself.get_article())
+#print(blogself.get_article())

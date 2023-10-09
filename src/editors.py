@@ -25,6 +25,7 @@ class EditorGPT():
                             1. an introduction, explaining the topic of the article
                             2-n. the main body of the article
                             n+1. a conclusion
+                            When generating the chapter names, do not include "Chapter X" in the chapter title.
                             The chapters shall be enough to cover a 1500-2000 words article and they shall enable the reader to explore the topic of the article in details
                             For every chapter you must generate a brief description of its content, your target is the blog writer and your task is to give him a clear picture of what he has to write
                             You always keep in mind that SEO is everything. You think step by step"""
