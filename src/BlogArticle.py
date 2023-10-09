@@ -2,10 +2,11 @@ from langchain.chat_models import ChatOpenAI
 from editors import EditorGPT
 from writers import WriterGPT
 import os
+import logging
 
 class BlogArticle():
     
-    def __init__(self, llm, article_topic, workers):
+    def __init__(self, llm, article_topic, workers, log_obj):
         self._llm = llm
         self._workers = workers
         self._article_topic = article_topic
@@ -14,16 +15,24 @@ class BlogArticle():
         self._writer = self._workers["writer"](self._llm)
 
         self._article_title, self._article_seo_keywords = self._editor.generate_article_title_and_keywords(self._article_topic)
+        log_obj.info("Article title: " + self._article_title)
+        log_obj.info("Artcicle keywords: " + self._article_seo_keywords)
+
         self._article_chapters, self._article_chapters_header = self._editor.generate_article_chapters(self._article_title, self._article_seo_keywords)
-        
+        log_obj.info("Article chapters: " + ', '.join(self._article_chapters))
+        log_obj.info("Article chapters headers: " + ', '.join(self._article_chapters_header))
+
         self._chapter_content = []
+        last_chapter_content = " "
 
         for (index, _) in enumerate(self._article_chapters):
             self._chapter_content.append(self._writer.generate_article_chapter(self._article_title, self._article_seo_keywords, 
-                                                                               self._article_chapters, self._article_chapters_header, index + 1))
-            print(self._chapter_content[index])
-        #article_text = self._writer.generate_article_chapter(self._article_title, self._article_seo_keywords, self._article_chapters, self._article_chapters_header, 2)
-        #print(article_text)
+                                                                               self._article_chapters, self._article_chapters_header, index + 1,
+                                                                               last_chapter_content))
+            last_chapter_content = self._chapter_content[index]
+            log_obj.info("Chapter " + str(index + 1) + ": \"" + self._article_chapters[index] + "\" generated successfully")
+            log_obj.info(self._chapter_content[index])
+
 
     def get_title(self):
         return self._article_title
@@ -42,12 +51,34 @@ class BlogArticle():
         overview_str += ', '.join(self._article_chapters_header) + "\n---------\n" + self._article_seo_keywords
         return overview_str
 
-llm = ChatOpenAI(model_name="gpt-3.5-turbo", openai_api_key=os.getenv("OPENAI_TEST_KEY"))
-user_input_article_topic = "Autosar crypto stack in details"
+    def get_article(self):
+        formatted_article = self._article_title
+        formatted_article += "\n---------\n"
+
+        for index, chapter in self._article_chapters:
+            formatted_article += chapter + "\n---------\n"
+            formatted_article += self._chapter_content[index]
+            formatted_article += "\n---------\n"
+
+        return formatted_article
 
 workers = {}
 workers["editor"] = EditorGPT
 workers["writer"] = WriterGPT
 
-blogself = BlogArticle(llm, user_input_article_topic, workers)
+# Configure the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+logging.basicConfig(level=logging.INFO)
+
+# Configure the log format
+logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('blogself')
+
+logger.info("Contacting OpenAI")
+
+llm = ChatOpenAI(model_name="gpt-3.5-turbo", openai_api_key=os.getenv("OPENAI_TEST_KEY"))
+user_input_article_topic = "Minecraft developement history"
+
+logger.info("Creating the blog article with title: " + user_input_article_topic) 
+blogself = BlogArticle(llm, user_input_article_topic, workers, logger)
 print(blogself.get_overview())
+print(blogself.get_article())
