@@ -43,7 +43,7 @@ class BlogArticle():
         return overview_str
 
 llm = ChatOpenAI(model_name="gpt-3.5-turbo", openai_api_key=os.getenv("OPENAI_TEST_KEY"))
-user_input_article_topic = "Development and evolution of minecraft in the years"
+user_input_article_topic = "Autosar crypto stack in details"
 
 workers = {}
 workers["editor"] = EditorGPT
