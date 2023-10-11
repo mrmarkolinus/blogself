@@ -4,7 +4,7 @@ import re
 STANDARD_STATUS_FILE_PATH = "src/.temp_gen/status.tmp"
 STANDARD_ARTICLE_FILE_PATH = "src/.temp_gen/article.tmp"
 
-class BlogArticle():
+class BlogCache():
 
     def __init__(self, status_file_path = STANDARD_STATUS_FILE_PATH, article_file_path = STANDARD_ARTICLE_FILE_PATH, pattern = r'###(\d+)###'):
         self._status_file_path = status_file_path
@@ -12,29 +12,25 @@ class BlogArticle():
         self._pattern = pattern
     
     def load_cached_content(self):
-        cache_exists, cached_status, cached_article = self._read_cache_content(self)
+        cache_exists, cached_status, cached_article = self._read_cache_content()
 
         if cached_status == "finished":
             content_before_last_match = ""
-            cache_exists = False
         else:
             if not cache_exists:
                 content_before_last_match = ""
             else:
                 # Find all occurrences of the pattern in the text
                 matches = re.finditer(self._pattern, cached_article)
-                # Extract all match objects into a list
-                match_list = list(matches)
 
-                if match_list:
-                    # Get the last match object
-                    last_match = match_list[-1]
-                    # Extract the content before the last match
-                    content_before_last_match = cached_article[:last_match.start()]
-                else:
-                    content_before_last_match = ""
+                # Initialize the variable to store the content
+                chapter_content_list = []
+                match_end = 0
+                for match in matches:
+                    chapter_content_list.append(cached_article[match_end:match.start()])
+                    match_end = match.end()
 
-        return cache_exists, content_before_last_match
+        return cache_exists, cached_status, chapter_content_list
 
     def write_cache_article(self, article_step, article_content):
         with open(self._article_file_path, "w") as file:

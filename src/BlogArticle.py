@@ -1,6 +1,7 @@
 from langchain.chat_models import ChatOpenAI
 from editors import EditorGPT
 from writers import WriterGPT
+from BlogCache import BlogCache
 import os
 import logging
 
@@ -15,6 +16,22 @@ class BlogArticle():
         self._editor = self._workers["editor"](self._llm, self._article_topic)
         self._writer = self._workers["writer"](self._llm)
 
+        if cached:
+            self._cache = BlogCache()
+
+        cache_exists, cached_status, cached_content = self._cache.load_cached_content()
+
+        if cache_exists:
+            if cached_status == "title_generated":
+                skip_title_generation = True
+            elif cached_status == "chapters_title_generated":
+                skip_title_generation = True
+                skip_chapter_generation = True
+            elif cached_status == "chapters_content_generated":
+                skip_title_generation = True
+                skip_chapter_generation = True
+                skip_chapter_content_generation = True
+
         self._article_title, self._article_seo_keywords = self._editor.generate_article_title_and_keywords(self._article_topic)
         log_obj.info("Article title: " + self._article_title)
         log_obj.info("Artcicle keywords: " + self._article_seo_keywords)
@@ -23,16 +40,18 @@ class BlogArticle():
         log_obj.info("Article chapters: " + ', '.join(self._article_chapters))
         log_obj.info("Article chapters headers: " + ', '.join(self._article_chapters_header))
 
-        self._chapter_content = []
-        last_chapter_content = " "
-
-        for (index, _) in enumerate(self._article_chapters):
-            self._chapter_content.append(self._writer.generate_article_chapter(self._article_title, self._article_seo_keywords, 
-                                                                               self._article_chapters, self._article_chapters_header, index,
-                                                                               last_chapter_content))
-            last_chapter_content = self._chapter_content[index]
-            log_obj.info("Chapter \"" + self._article_chapters[index] + "\" generated successfully")
-            log_obj.info(self._chapter_content[index])
+        if skip_chapter_content_generation:
+            self._chapter_content = cached_content
+        else:
+            self._chapter_content = []
+            last_chapter_content = " "
+            for (index, _) in enumerate(self._article_chapters):
+                self._chapter_content.append(self._writer.generate_article_chapter(self._article_title, self._article_seo_keywords, 
+                                                                                self._article_chapters, self._article_chapters_header, index,
+                                                                                last_chapter_content))
+                last_chapter_content = self._chapter_content[index]
+                log_obj.info("Chapter \"" + self._article_chapters[index] + "\" generated successfully")
+                log_obj.info(self._chapter_content[index])
 
 
         self._article_text_consolidated = self._editor.consolidate_article(self._article_title, self._article_seo_keywords, self._article_chapters, self._article_chapters_header, self._chapter_content)
