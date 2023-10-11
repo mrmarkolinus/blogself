@@ -6,10 +6,11 @@ import logging
 
 class BlogArticle():
     
-    def __init__(self, llm, article_topic, workers, log_obj):
+    def __init__(self, llm, article_topic, workers, log_obj, cached=True):
         self._llm = llm
         self._workers = workers
         self._article_topic = article_topic
+        self._cached = cached
 
         self._editor = self._workers["editor"](self._llm, self._article_topic)
         self._writer = self._workers["writer"](self._llm)
@@ -36,6 +37,7 @@ class BlogArticle():
 
         self._article_text_consolidated = self._editor.consolidate_article(self._article_title, self._article_seo_keywords, self._article_chapters, self._article_chapters_header, self._chapter_content)
 
+    
     def get_title(self):
         return self._article_title
     
@@ -70,7 +72,7 @@ logger = logging.getLogger('blogself')
 logger.info("Contacting OpenAI")
 
 llm = ChatOpenAI(model_name="gpt-3.5-turbo-16k", openai_api_key=os.getenv("OPENAI_TEST_KEY"), temperature=0)
-user_input_article_topic = "CAN Bus Demo on Arduino6"
+user_input_article_topic = "CAN Bus Demo on Arduino"
 
 logger.info("Creating the blog article from topic: " + user_input_article_topic) 
 blogself = BlogArticle(llm, user_input_article_topic, workers, logger)
