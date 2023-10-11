@@ -27,12 +27,14 @@ class BlogArticle():
 
         for (index, _) in enumerate(self._article_chapters):
             self._chapter_content.append(self._writer.generate_article_chapter(self._article_title, self._article_seo_keywords, 
-                                                                               self._article_chapters, self._article_chapters_header, index + 1,
+                                                                               self._article_chapters, self._article_chapters_header, index,
                                                                                last_chapter_content))
             last_chapter_content = self._chapter_content[index]
             log_obj.info("Chapter \"" + self._article_chapters[index] + "\" generated successfully")
             log_obj.info(self._chapter_content[index])
 
+
+        self._article_text_consolidated = self._editor.consolidate_article(self._article_title, self._article_seo_keywords, self._article_chapters, self._article_chapters_header, self._chapter_content)
 
     def get_title(self):
         return self._article_title
@@ -52,15 +54,7 @@ class BlogArticle():
         return overview_str
 
     def get_article(self):
-        formatted_article = self._article_title
-        formatted_article += "\n---------\n"
-
-        for index, chapter in self._article_chapters:
-            formatted_article += chapter + "\n---------\n"
-            formatted_article += self._chapter_content[index]
-            formatted_article += "\n---------\n"
-
-        return formatted_article
+        return self._article_text_consolidated
 
 workers = {}
 workers["editor"] = EditorGPT
@@ -75,10 +69,10 @@ logger = logging.getLogger('blogself')
 
 logger.info("Contacting OpenAI")
 
-llm = ChatOpenAI(model_name="gpt-3.5-turbo", openai_api_key=os.getenv("OPENAI_TEST_KEY"), temperature=0)
-user_input_article_topic = "Minecraft developement history"
+llm = ChatOpenAI(model_name="gpt-3.5-turbo-16k", openai_api_key=os.getenv("OPENAI_TEST_KEY"), temperature=0)
+user_input_article_topic = "CAN Bus Demo on Arduino6"
 
-logger.info("Creating the blog article frin topic: " + user_input_article_topic) 
+logger.info("Creating the blog article from topic: " + user_input_article_topic) 
 blogself = BlogArticle(llm, user_input_article_topic, workers, logger)
 print(blogself.get_overview())
-#print(blogself.get_article())
+print(blogself.get_article())
