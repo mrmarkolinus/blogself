@@ -21,6 +21,10 @@ class BlogArticle():
 
         cache_exists, cached_status, cached_content = self._cache.load_cached_content()
 
+        skip_title_generation = False
+        skip_chapter_generation = False
+        skip_chapter_content_generation = False
+        
         if cache_exists:
             if cached_status == "title_generated":
                 skip_title_generation = True
@@ -31,6 +35,7 @@ class BlogArticle():
                 skip_title_generation = True
                 skip_chapter_generation = True
                 skip_chapter_content_generation = True
+            
 
         self._article_title, self._article_seo_keywords = self._editor.generate_article_title_and_keywords(self._article_topic)
         log_obj.info("Article title: " + self._article_title)

@@ -135,7 +135,7 @@ class EditorGPT():
         prompt = ChatPromptTemplate(
         messages=[
             ChatMessagePromptTemplate.from_template(role = "system", template = self._template_consolidation_system + "\n{format_instructions}"),
-            HumanMessagePromptTemplate.from_template(user_article_prompt),
+            HumanMessagePromptTemplate.from_template(user_article_prompt)
         ],
         input_variables=[],
         partial_variables={"format_instructions": self._parser_reviewed_article.get_format_instructions()}

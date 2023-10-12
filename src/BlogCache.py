@@ -14,6 +14,7 @@ class BlogCache():
     def load_cached_content(self):
         cache_exists, cached_status, cached_article = self._read_cache_content()
 
+        chapter_content_list = []
         if cached_status == "finished":
             content_before_last_match = ""
         else:
@@ -24,7 +25,6 @@ class BlogCache():
                 matches = re.finditer(self._pattern, cached_article)
 
                 # Initialize the variable to store the content
-                chapter_content_list = []
                 match_end = 0
                 for match in matches:
                     chapter_content_list.append(cached_article[match_end:match.start()])
