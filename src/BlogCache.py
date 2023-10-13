@@ -127,9 +127,21 @@ class BlogCache():
     def tag_reviewed_content(self):
         return self._cache_content_tags["CACHE_TAG_ARTICLE_REVIEWED_CONTENT"]
 
-    def write_cache_article(self, article_step, article_content):
+    def write_cache_article(self, article_step, article_content, article_substep = ""):
+        
+        if article_substep == "":
+            open_tag_format = "[" + article_step + "]"
+            closed_tag_format = "[/" + article_step + "]"
+        else:
+            article_substep = self._remove_regex_symbols(article_substep)
+            open_tag_format = "[" + article_step + "::" + article_substep + "]"
+            closed_tag_format = "[/" + article_step + "::" + article_substep + "]"
+    
         with open(self._article_file_path, "a+") as file:
-            file.write("[" + article_step + "]\n"+ article_content + "\n[/" + article_step +  "]\n\n")
+            file.write(open_tag_format + "\n"+ article_content + "\n" + closed_tag_format + "\n\n")
+
+    def _remove_regex_symbols(self, text):
+        return re.sub(r'[^\w\s]', '', text)
 
     def _recreate_blog_article(self):
 
@@ -145,19 +157,30 @@ class BlogCache():
         self._chapters_list_headers_is_cached, self._cached_chapters_list_headers = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_CHAPTERS_LIST_HEADERS")
         if not self._chapters_list_headers_is_cached: return
 
-        self._chapters_content_is_cached, self._cached_chapters_content = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_CHAPTERS_CONTENT")
-        if not self._chapters_content_is_cached: return
+        chapters_titles_list = self._cached_chapters_list.split(", ")
+        self._chapters_content_is_cached = [False] * len(chapters_titles_list)
+        for (chapter_index, chapter_title) in enumerate(chapters_titles_list):
+            self._chapters_content_is_cached[chapter_index], self._cached_chapters_content = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_CHAPTERS_CONTENT", chapter_title)
+            if not self._chapters_content_is_cached[chapter_index]: return
 
         self._reviewed_content_is_cached, self._cached_reviewed_content = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_REVIEWED_CONTENT")
         if not self._reviewed_content_is_cached: return
 
-    def _recreate_from_cached_content(self, section_tag):
+    def _recreate_from_cached_content(self, section_tag, section_subtag = ""):
         unread_cache = self._cached_raw_content[self._cache_read_until:]
         match_found = False
         match_content = ""
 
-        match_tag_open = re.search("\[" + self._cache_content_tags[section_tag] + "\]", unread_cache)
-        match_tag_closed = re.search("\[/" + self._cache_content_tags[section_tag] + "\]", unread_cache)
+        if section_subtag == "":
+            open_tag_format = "\[" + self._cache_content_tags[section_tag] + "\]"
+            closed_tag_format = "\[/" + self._cache_content_tags[section_tag] + "\]"
+        else:
+            section_subtag = self._remove_regex_symbols(section_subtag)
+            open_tag_format = "\[" + self._cache_content_tags[section_tag] + "::" + section_subtag + "\]"
+            closed_tag_format = "\[/" + self._cache_content_tags[section_tag] + "::" + section_subtag + "\]"
+
+        match_tag_open = re.search(open_tag_format, unread_cache)
+        match_tag_closed = re.search(closed_tag_format, unread_cache)
 
         if match_tag_open and match_tag_closed:
             self._cache_read_until += match_tag_closed.end()

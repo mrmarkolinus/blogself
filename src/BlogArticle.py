@@ -20,18 +20,8 @@ class BlogArticle():
 
         self._generate_title_and_seo()
         self._generate_chapters_title_and_description()
+        self._generate_chapters()
         
-        self._chapter_content = []
-        last_chapter_content = " "
-        for (index, _) in enumerate(self._article_chapters):
-            self._chapter_content.append(self._writer.generate_article_chapter(self._article_title, self._article_seo_keywords, 
-                                                                            self._article_chapters, self._article_chapters_header, index,
-                                                                            last_chapter_content))
-            last_chapter_content = self._chapter_content[index]
-            log_obj.info("Chapter \"" + self._article_chapters[index] + "\" generated successfully")
-            log_obj.info(self._chapter_content[index])
-
-
         self._article_text_consolidated = self._editor.consolidate_article(self._article_title, self._article_seo_keywords, self._article_chapters, self._article_chapters_header, self._chapter_content)
 
 
@@ -52,10 +42,12 @@ class BlogArticle():
     def _generate_chapters_title_and_description(self):
 
         if self._cache.is_article_chapters_list_cached() and self._cache.is_article_chapters_list_headers_cached():
-            self._article_chapters = self._cache.get_cached_article_chapters_list()
-            self._article_chapters_header = self._cache.get_cached_article_chapters_list_headers()
-            self._logger.info("Article chapters [LOADED FROM CACHE]: " + chapters_list_str)
-            self._logger.info("Article chapters headers [LOADED FROM CACHE]: " + chapters_description_list_str)
+            article_chapters_str = self._cache.get_cached_article_chapters_list()
+            article_chapters_description_str = self._cache.get_cached_article_chapters_list_headers()
+            self._article_chapters = article_chapters_str.split(', ')
+            self._article_chapters_header = article_chapters_description_str.split(', ')
+            self._logger.info("Article chapters [LOADED FROM CACHE]: " + article_chapters_str)
+            self._logger.info("Article chapters headers [LOADED FROM CACHE]: " + article_chapters_description_str)
         else:
             self._article_chapters, self._article_chapters_header = self._editor.generate_article_chapters(self._article_title, self._article_seo_keywords)      
             chapters_list_str = ', '.join(self._article_chapters)
@@ -65,6 +57,20 @@ class BlogArticle():
             self._cache.write_cache_article(self._cache.tag_chapters_list(), chapters_list_str)
             self._cache.write_cache_article(self._cache.tag_chapters_list_header(), chapters_description_list_str)
     
+    def _generate_chapters(self):
+
+        self._chapter_content = []
+        last_chapter_content = " "
+        for (index, _) in enumerate(self._article_chapters):
+            self._chapter_content.append(self._writer.generate_article_chapter(self._article_title, self._article_seo_keywords, 
+                                                                            self._article_chapters, self._article_chapters_header, index,
+                                                                            last_chapter_content))
+            last_chapter_content = self._chapter_content[index]
+            self._logger.info("Chapter \"" + self._article_chapters[index] + "\" generated successfully")
+            self._logger.info(self._chapter_content[index])
+            self._cache.write_cache_article(self._cache.tag_chapters_content(), self._chapter_content[index], self._article_chapters[index],)
+
+
     def get_title(self):
         return self._article_title
     
