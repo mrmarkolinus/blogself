@@ -19,11 +19,22 @@ class BlogCache():
         self._cache_read_until = 0
 
         self._cached_title = ""
+        self._title_is_cached = False
+
         self._cached_seo_keywords = ""
+        self._seo_keywords_is_cached = False
+
         self._cached_chapters_list = ""
+        self._chapters_list_is_cached = False
+
         self._cached_chapters_list_headers = ""
+        self._chapters_list_headers_is_cached = False
+
         self._cached_chapters_content = ""
+        self._chapters_content_is_cached = False
+        
         self._cached_reviewed_content = ""
+        self._reviewed_content_is_cached = False
 
         self._cache_status_tags = {'IN_PROGRESS': 'PENDING',
                                    'FINISHED': 'DONE'
@@ -48,7 +59,31 @@ class BlogCache():
             self._recreate_blog_article()
 
     def is_valid(self):
-        return self._cache_valid and self._cached_status != self._cache_status_tags["IN_PROGRESS"]
+        return (self._cache_valid and self._cached_status != self._cache_status_tags["FINISHED"])
+    
+    def is_article_title_cached(self):
+        if self.is_valid(): return self._title_is_cached
+        else: return False
+
+    def is_article_seo_keywords_cached(self):
+        if self.is_valid(): return self._seo_keywords_is_cached
+        else: return False
+
+    def is_article_chapters_list_cached(self):
+        if self.is_valid(): return self._chapters_list_is_cached
+        else: return False
+
+    def is_article_chapters_list_headers_cached(self):
+        if self.is_valid(): return self._chapters_list_headers_is_cached
+        else: return False
+
+    def is_article_chapters_content_cached(self):
+        if self.is_valid(): return self._chapters_content_is_cached
+        else: return False
+
+    def is_article_reviewed_content_cached(self):
+        if self.is_valid(): return self._reviewed_content_is_cached
+        else: return False
     
     def get_cached_article_title(self):
         if self.is_valid(): return self._cached_title
@@ -98,35 +133,36 @@ class BlogCache():
 
     def _recreate_blog_article(self):
 
-        is_cached, self._cached_title = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_TITLE") 
-        if not is_cached: return
+        self._title_is_cached, self._cached_title = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_TITLE") 
+        if not self._title_is_cached: return
         
-        is_cached, self._cached_seo_keywords = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_SEO_KEYWORDS")
-        if not is_cached: return
+        self._seo_keywords_is_cached, self._cached_seo_keywords = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_SEO_KEYWORDS")
+        if not self._seo_keywords_is_cached: return
 
-        is_cached, self._cached_chapters_list = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_CHAPTERS_LIST")
-        if not is_cached: return
+        self._chapters_list_is_cached, self._cached_chapters_list = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_CHAPTERS_LIST")
+        if not self._chapters_list_is_cached: return
 
-        is_cached, self._cached_chapters_list_headers = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_CHAPTERS_LIST_HEADERS")
-        if not is_cached: return
+        self._chapters_list_headers_is_cached, self._cached_chapters_list_headers = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_CHAPTERS_LIST_HEADERS")
+        if not self._chapters_list_headers_is_cached: return
 
-        is_cached, self._cached_chapters_content = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_CHAPTERS_CONTENT")
-        if not is_cached: return
+        self._chapters_content_is_cached, self._cached_chapters_content = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_CHAPTERS_CONTENT")
+        if not self._chapters_content_is_cached: return
 
-        is_cached, self._cached_reviewed_content = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_REVIEWED_CONTENT")
-        if not is_cached: return
+        self._reviewed_content_is_cached, self._cached_reviewed_content = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_REVIEWED_CONTENT")
+        if not self._reviewed_content_is_cached: return
 
     def _recreate_from_cached_content(self, section_tag):
         unread_cache = self._cached_raw_content[self._cache_read_until:]
         match_found = False
         match_content = ""
 
-        match_tag_open = re.search("[" + self._cache_content_tags[section_tag] + "]", unread_cache)
-        match_tag_closed = re.search("[/" + self._cache_content_tags[section_tag] + "]", unread_cache)
+        match_tag_open = re.search("\[" + self._cache_content_tags[section_tag] + "\]", unread_cache)
+        match_tag_closed = re.search("\[/" + self._cache_content_tags[section_tag] + "\]", unread_cache)
 
         if match_tag_open and match_tag_closed:
-            self._cache_read_until = match_tag_closed.end()
-            match_content = self._cached_raw_content[match_tag_open.start():match_tag_closed.start()]
+            self._cache_read_until += match_tag_closed.end()
+            #return the content between the tags and remove first and last char which are always newlines
+            match_content = unread_cache[match_tag_open.end()+1:match_tag_closed.start()-1]
             match_found = True
         
         return match_found, match_content
