@@ -1,52 +1,78 @@
-import data_analyst_guy
-import openai_prompt_guy
-import openai
+from langchain.chat_models import ChatOpenAI
+from editors import EditorGPT
+from writers import WriterGPT
+from BlogCache import BlogCache
+from BlogArticle import BlogArticle
 import os
-
-# OPENAI API KEY, GOOGLE API KEY AND CSE ID
-openai.api_key = os.getenv("OPENAI_TEST_KEY")
-API_KEY = os.getenv("GOOGLE_SEARCH_API_KEY")
-CSE_ID = os.getenv("GOOGLE_CSE_ID")
+import logging
+import html
+import re
 
 
+workers = {}
+workers["editor"] = EditorGPT
+workers["writer"] = WriterGPT
 
-#General artcile topic. These keyword (up to 5), will be used to search on google trends for top trend queries.
-#kw_list = ["travel", "reise", "urlaub", "hotel", "airbnb"]
+# Configure the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+logging.basicConfig(level=logging.INFO)
 
-kw_list = ["minecraft", "mcc"]
+# Configure the log format
+logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('blogself')
 
-#the data guy search for the queries
-trending_related_queries = data_analyst_guy.get_latest_top_search_trend(kw_list)
+logger.info("Contacting OpenAI")
 
-#the prompt guy translate the results in gpt format (limited context up to 8k tokens)
-gpt_format_trending_queries = openai_prompt_guy.get_google_queries_compact_gpt_format(trending_related_queries)
+llm = ChatOpenAI(model_name="gpt-3.5-turbo-16k", openai_api_key=os.getenv("OPENAI_TEST_KEY"), temperature=0)
+user_input_article_topic = "CAN Bus Demo on Arduino"
 
-#the prompt guy asks gpt to decide a title for the article and ask for 5 SEO keywords
-article_title, article_seo_keywords = openai_prompt_guy.get_article_title_and_seo(gpt_format_trending_queries)
+logger.info("Creating the blog article from topic: " + user_input_article_topic) 
+blogself = BlogArticle(llm, user_input_article_topic, workers, logger, generate_at_init=True)
+#print(blogself.get_overview())
+#print(blogself.get_article())
+#blogself.get_article_from_file()
+blogself.to_html()
+article_html_pre_text = """<!DOCTYPE html>
+                            <html lang="en">
 
-#the prompt guy asks gpt to write an article, first based only on GPT knowledge before cutoff
-article_text_based_on_model_knowledge, keywords_for_update = openai_prompt_guy.write_article_based_on_model_knowledge(article_title, article_seo_keywords)
+                            <head>
+                                <meta charset="UTF-8">
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                <title>Blog Article</title>
+                                <link rel="stylesheet" href="styles.css">
+                            </head>
 
-#based on the model knowledge keywords, the data guy googles updated info on the topics suggested by gpt. It returns a list of websites to read for more information
-url_lists = data_analyst_guy.search_updated_information_with_google(keywords_for_update, API_KEY, CSE_ID)
+                            <body>
 
-#because of the gpt limited context, the data guy will summarize the websites using gpt, passing the entire informationit to gpt again for the final article
-summarized_uptodate_information = openai_prompt_guy.get_gpt_websites_summary(url_lists, API_KEY, CSE_ID)
+                                <header>
+                                    <h1>My Blog</h1>
+                                </header>
 
-final_article = openai_prompt_guy.write_article_updated_with_internet_data(article_title, article_text_based_on_model_knowledge, article_seo_keywords, summarized_uptodate_information)
+                                <main>
+                                    <article>
+                                        <h2 class="article-title">Article Title Here</h2>
+                                        <div class="article-meta">
+                                            <span>Published on: <time datetime="2023-10-15">October 15, 2023</time></span>
+                                            <span>Author: John Doe</span>
+                                        </div>
+                                        <div class="article-content">
+                        """
+article_html_post_text = """</div>
+                                </article>
+                            </main>
+
+                            <footer>
+                                <p>&copy; 2023 My Blog. All rights reserved.</p>
+                            </footer>
+
+                        </body>
+
+                        </html>
 
 
-print(article_title)
-print("----")
-print(article_seo_keywords)
-print("----")
-print(article_text_based_on_model_knowledge)
-print("----")
-print(keywords_for_update)
-print("----")
-print(url_lists)
-print("----")
-print(summarized_uptodate_information)
-print("----")
-print(final_article)
+                        """
 
+
+blog_html_page = article_html_pre_text + blogself.to_html() + article_html_post_text
+
+with open("./src/output/test/article.html", "w+") as f:
+    f.write(blog_html_page)

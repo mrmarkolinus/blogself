@@ -176,3 +176,4 @@ class EditorGPT():
             print("Article text after review: " + consolidated_content_after_review)
 
         return consolidated_content_after_review
+

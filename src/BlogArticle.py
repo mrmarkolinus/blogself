@@ -4,28 +4,40 @@ from writers import WriterGPT
 from BlogCache import BlogCache
 import os
 import logging
+import html
+import re
+
 
 class BlogArticle():
     
-    def __init__(self, llm, article_topic, workers, log_obj, load_from_cache_if_possible=True, article_file_path = "src/.output/article.txt"):
+    def __init__(self, llm, article_topic, workers, log_obj, load_from_cache_if_possible=True, generate_at_init=True, article_file_path = "src/output/article.txt"):
         self._llm = llm
         self._workers = workers
         self._article_topic = article_topic
         self._logger = log_obj
+        self._generate_at_init = generate_at_init
+        self._output_text_file = article_file_path
 
         self._editor = self._workers["editor"](self._llm, self._article_topic)
         self._writer = self._workers["writer"](self._llm)
 
         self._cache = BlogCache(load_from_cache_if_possible)
 
-        self._generate_title_and_seo()
-        self._generate_chapters_title_and_description()
-        self._generate_chapters()
-        
-        self._article_text_consolidated = self._editor.consolidate_article(self._article_title, self._article_seo_keywords, self._article_chapters, self._article_chapters_header, self._chapter_content)
 
-        with open(article_file_path, "w") as article_file:
-            article_file.write(self._article_text_consolidated)
+        #generate the entire blog article, cached or not, at the creation of the object BlogArticle
+        if generate_at_init:
+
+            self._generate_title_and_seo()
+            self._generate_chapters_title_and_description()
+            self._generate_chapters()
+            
+            self._article_text_consolidated = self._editor.consolidate_article(self._article_title, self._article_seo_keywords, self._article_chapters, self._article_chapters_header, self._chapter_content)
+
+            with open(self._output_text_file, "w") as article_file:
+                article_file.write(self._article_text_consolidated)
+
+            self._article_text_consolidated.to_html()
+        
 
     def _generate_title_and_seo(self):
 
@@ -78,7 +90,8 @@ class BlogArticle():
             last_chapter_content = self._chapter_content[index]
             self._logger.info(self._chapter_content[index])
             
-
+    def to_html(self):
+        return html.escape(self._article_text_consolidated).replace("\n", "<br>")
 
     def get_title(self):
         return self._article_title
@@ -99,24 +112,12 @@ class BlogArticle():
 
     def get_article(self):
         return self._article_text_consolidated
-
-workers = {}
-workers["editor"] = EditorGPT
-workers["writer"] = WriterGPT
-
-# Configure the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-logging.basicConfig(level=logging.INFO)
-
-# Configure the log format
-logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('blogself')
-
-logger.info("Contacting OpenAI")
-
-llm = ChatOpenAI(model_name="gpt-3.5-turbo-16k", openai_api_key=os.getenv("OPENAI_TEST_KEY"), temperature=0)
-user_input_article_topic = "CAN Bus Demo on Arduino"
-
-logger.info("Creating the blog article from topic: " + user_input_article_topic) 
-blogself = BlogArticle(llm, user_input_article_topic, workers, logger)
-print(blogself.get_overview())
-print(blogself.get_article())
+    
+    def get_article_from_file(self):
+        if os.path.exists(self._output_text_file):
+            with open(self._output_text_file, "r") as article_file:
+                self._article_text_consolidated = article_file.read()
+        else:
+            self._article_text_consolidated = ""
+            self._logger.warning("Article file not found, article text will be empty!")
+        return self._article_text_consolidated

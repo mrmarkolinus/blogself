@@ -156,6 +156,7 @@ cython_debug/
 src/.temp_gen/
 
 #test html page
+src/output/
 src/output/test
 
 # PyCharm
