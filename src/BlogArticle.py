@@ -7,7 +7,7 @@ import logging
 
 class BlogArticle():
     
-    def __init__(self, llm, article_topic, workers, log_obj, load_from_cache_if_possible=True):
+    def __init__(self, llm, article_topic, workers, log_obj, load_from_cache_if_possible=True, article_file_path = "src/.output/article.txt"):
         self._llm = llm
         self._workers = workers
         self._article_topic = article_topic
@@ -24,6 +24,8 @@ class BlogArticle():
         
         self._article_text_consolidated = self._editor.consolidate_article(self._article_title, self._article_seo_keywords, self._article_chapters, self._article_chapters_header, self._chapter_content)
 
+        with open(article_file_path, "w") as article_file:
+            article_file.write(self._article_text_consolidated)
 
     def _generate_title_and_seo(self):
 
@@ -62,13 +64,20 @@ class BlogArticle():
         self._chapter_content = []
         last_chapter_content = " "
         for (index, _) in enumerate(self._article_chapters):
-            self._chapter_content.append(self._writer.generate_article_chapter(self._article_title, self._article_seo_keywords, 
+
+            if self._cache.is_article_chapters_content_cached()[index]:
+                self._chapter_content.append(self._cache.get_cached_article_chapters_content()[index])
+                self._logger.info("Chapter \"" + self._article_chapters[index] + "\" [LOADED FROM CACHE]")
+            else:
+                self._chapter_content.append(self._writer.generate_article_chapter(self._article_title, self._article_seo_keywords, 
                                                                             self._article_chapters, self._article_chapters_header, index,
                                                                             last_chapter_content))
+                self._cache.write_cache_article(self._cache.tag_chapters_content(), self._chapter_content[index], self._article_chapters[index],)
+                self._logger.info("Chapter \"" + self._article_chapters[index] + "\" generated successfully")
+
             last_chapter_content = self._chapter_content[index]
-            self._logger.info("Chapter \"" + self._article_chapters[index] + "\" generated successfully")
             self._logger.info(self._chapter_content[index])
-            self._cache.write_cache_article(self._cache.tag_chapters_content(), self._chapter_content[index], self._article_chapters[index],)
+            
 
 
     def get_title(self):

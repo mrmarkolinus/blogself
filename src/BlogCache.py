@@ -159,8 +159,9 @@ class BlogCache():
 
         chapters_titles_list = self._cached_chapters_list.split(", ")
         self._chapters_content_is_cached = [False] * len(chapters_titles_list)
+        self._cached_chapters_content = [None] * len(chapters_titles_list)
         for (chapter_index, chapter_title) in enumerate(chapters_titles_list):
-            self._chapters_content_is_cached[chapter_index], self._cached_chapters_content = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_CHAPTERS_CONTENT", chapter_title)
+            self._chapters_content_is_cached[chapter_index], self._cached_chapters_content[chapter_index] = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_CHAPTERS_CONTENT", chapter_title)
             if not self._chapters_content_is_cached[chapter_index]: return
 
         self._reviewed_content_is_cached, self._cached_reviewed_content = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_REVIEWED_CONTENT")

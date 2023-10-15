@@ -40,7 +40,7 @@ class EditorGPT():
     
     _template_consolidation_user =     """I. Role:
                                         Your role is to assist me in reviewing and refining the article. 
-                                        You will read the article, compare it with the chapter titles and headers, make necessary corrections, and add relevant information to enhance the article. 
+                                        You will read the article, or a chunk of it, compare it with the chapter titles and headers, make necessary corrections, and add relevant information to enhance the article. 
                                         You will also ensure that the final output is well-formatted and in JSON format.
                                         II. Context and Topic:
                                         The context is editing and refining an article.
@@ -51,13 +51,12 @@ class EditorGPT():
                                         Full Article Content: [Full Article Content]
                                         III. Task Description:
                                         Your task is to carefully read the article, cross-check it with the chapter titles and headers, correct any errors or inconsistencies, and add relevant information if needed. 
-                                        The goal is to ensure that the article is well-formatted, around 2000 words, and optimized for SEO.
+                                        The goal is to ensure that the article is well-formatted, and optimized for SEO.
                                         IV. Subtask Sequence:
                                         Read the article carefully.
                                         Cross-check the article with the chapter titles and headers.
                                         Correct any errors or inconsistencies found in the article, but make sure to maintain the same level of details.
                                         Add additional information to the article if relevant and necessary.
-                                        Ensure the article is well-formatted and around 2000 words.
                                         Format the most relevant words or sentences with [b][/b].
                                         Format quotes with [i][/i].
                                         Format code with [code][/code].
@@ -66,7 +65,7 @@ class EditorGPT():
                                         V. Output Format:
                                         The output should be a JSON format containing the edited and refined article.
                                         VI. Constraints or Requirements:
-                                        The article should be well-formatted and around 2000 words. It should be optimized for SEO. The final output format should be JSON.
+                                        The article should be well-formatted. It should be optimized for SEO. The final output format should be JSON.
                                         """
     #  """You take in inputs the article title and 5 seo keywords, the list of chapters, the list of chapters headers and the full article content.
     #                                     These were all written by you in a previous session. You read again the article carefully and double check it against the chapter titles and
@@ -110,6 +109,7 @@ class EditorGPT():
 
 
     def generate_article_chapters(self, input_title, input_keywords):
+
         prompt = ChatPromptTemplate(
         messages=[
             ChatMessagePromptTemplate.from_template(role = "system", template = self._template_chapters + "\n{format_instructions}"),
@@ -126,30 +126,53 @@ class EditorGPT():
     
     def consolidate_article(self, article_title, article_keywords, article_chapters_list, article_chapters_header, article_chapters_content_list):
 
-        user_article_prompt = str.replace(self._template_consolidation_user, "[Article Title]", article_title)
-        user_article_prompt = str.replace(user_article_prompt, "[SEO Keywords]", article_keywords)
-        user_article_prompt = str.replace(user_article_prompt, "[List of Chapters]", ', '.join(article_chapters_list))
-        user_article_prompt = str.replace(user_article_prompt, "[List of Chapter Headers]", ', '.join(article_chapters_header))
-        user_article_prompt = str.replace(user_article_prompt, "[Full Article Content]", '\n '.join(article_chapters_content_list))
+        chunk_size = 2
+        #chapter_already_in_previous_chunk = [False] * len(article_chapters_list)
 
-        prompt = ChatPromptTemplate(
-        messages=[
-            ChatMessagePromptTemplate.from_template(role = "system", template = self._template_consolidation_system + "\n{format_instructions}"),
-            HumanMessagePromptTemplate.from_template(user_article_prompt)
-        ],
-        input_variables=[],
-        partial_variables={"format_instructions": self._parser_reviewed_article.get_format_instructions()}
-        )
+        consolidated_content_after_review = ""
 
-        _input = prompt.format_prompt()
-        llm_response = self._llm(_input.to_messages())
-        
-        try:
-            llm_response_json = self._parser_reviewed_article.parse(llm_response.content)
-            article_content_after_review = llm_response_json.article_text_consolidated
-        except :
-            #sometimes gpt forget to return a json
-            print("WARNING: JSON not returned, got value directly")
-            article_content_after_review = llm_response.content
-        
-        return article_content_after_review
+        for index in range(0, len(article_chapters_list), chunk_size):#enumerate(article_chapters_list):
+            
+            chapters_to_consolidate = []
+            chapters_header_to_consolidate = []
+            chapters_content_to_consolidate = []
+
+            #if chapter_already_in_previous_chunk[index]:
+            #    pass
+            #else:
+            for ii_chunk in range(0, chunk_size):
+                if 0 <= index + ii_chunk < len(article_chapters_list):
+                    chapters_to_consolidate.append(article_chapters_list[index + ii_chunk])
+                    chapters_header_to_consolidate.append(article_chapters_header[index + ii_chunk])
+                    chapters_content_to_consolidate.append(article_chapters_content_list[index + ii_chunk])
+                    #chapter_already_in_previous_chunk[index + ii_chunk] = True
+
+            user_article_prompt = str.replace(self._template_consolidation_user, "[Article Title]", article_title)
+            user_article_prompt = str.replace(user_article_prompt, "[SEO Keywords]", article_keywords)
+            user_article_prompt = str.replace(user_article_prompt, "[List of Chapters]", ', '.join(chapters_to_consolidate))
+            user_article_prompt = str.replace(user_article_prompt, "[List of Chapter Headers]", ', '.join(chapters_header_to_consolidate))
+            user_article_prompt = str.replace(user_article_prompt, "[Full Article Content]", '\n '.join(chapters_content_to_consolidate))
+
+            prompt = ChatPromptTemplate(
+            messages=[
+                ChatMessagePromptTemplate.from_template(role = "system", template = self._template_consolidation_system + "\n{format_instructions}"),
+                HumanMessagePromptTemplate.from_template(user_article_prompt)
+            ],
+            input_variables=[],
+            partial_variables={"format_instructions": self._parser_reviewed_article.get_format_instructions()}
+            )
+
+            _input = prompt.format_prompt()
+            llm_response = self._llm(_input.to_messages())
+            
+            try:
+                llm_response_json = self._parser_reviewed_article.parse(llm_response.content)
+                consolidated_content_after_review += llm_response_json.article_text_consolidated
+            except :
+                #sometimes gpt forget to return a json
+                print("WARNING: JSON not returned, got value directly")
+                consolidated_content_after_review += llm_response.content
+
+            print("Article text after review: " + consolidated_content_after_review)
+
+        return consolidated_content_after_review
