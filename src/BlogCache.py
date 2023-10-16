@@ -18,6 +18,9 @@ class BlogCache():
         self._cached_raw_content = ""
         self._cache_read_until = 0
 
+        self._cached_topic = ""
+        self._topic_is_cached = False
+        
         self._cached_title = ""
         self._title_is_cached = False
 
@@ -40,7 +43,8 @@ class BlogCache():
                                    'FINISHED': 'DONE'
                                    }
 
-        self._cache_content_tags = {'CACHE_TAG_ARTICLE_TITLE': 'TITLE', 
+        self._cache_content_tags = {'CACHE_TAG_ARTICLE_TOPIC': 'TOPIC',
+                                    'CACHE_TAG_ARTICLE_TITLE': 'TITLE', 
                                     'CACHE_TAG_ARTICLE_SEO_KEYWORDS': 'SEO_KEYWORDS', 
                                     'CACHE_TAG_ARTICLE_CHAPTERS_LIST': 'CHAPTERS_LIST',
                                     'CACHE_TAG_ARTICLE_CHAPTERS_LIST_HEADERS': 'CHAPTERS_LIST_HEADERS',
@@ -61,6 +65,17 @@ class BlogCache():
     def is_valid(self):
         return (self._cache_valid and self._cached_status != self._cache_status_tags["FINISHED"])
     
+    def invalidate(self):
+       self._cache_valid = False
+       with open(self._article_file_path, "w") as file:
+           file.write("")
+       with open(self._status_file_path, "w") as file:
+           file.write(self._cache_status_tags["IN_PROGRESS"])
+
+    def is_article_topic_cached(self):
+        if self.is_valid(): return self._topic_is_cached
+        else: return False
+
     def is_article_title_cached(self):
         if self.is_valid(): return self._title_is_cached
         else: return False
@@ -85,6 +100,10 @@ class BlogCache():
         if self.is_valid(): return self._reviewed_content_is_cached
         else: return False
     
+    def get_cached_article_topic(self):
+        if self.is_valid(): return self._cached_topic
+        else: return ""
+
     def get_cached_article_title(self):
         if self.is_valid(): return self._cached_title
         else: return ""
@@ -108,6 +127,9 @@ class BlogCache():
     def get_cached_article_reviewed_content(self):
         if self.is_valid(): return self._cached_reviewed_content
         else: return ""
+    
+    def tag_topic(self):
+        return self._cache_content_tags["CACHE_TAG_ARTICLE_TOPIC"]
     
     def tag_title(self):
         return self._cache_content_tags["CACHE_TAG_ARTICLE_TITLE"]
@@ -144,6 +166,9 @@ class BlogCache():
         return re.sub(r'[^\w\s]', '', text)
 
     def _recreate_blog_article(self):
+
+        self._topic_is_cached, self._cached_topic = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_TOPIC") 
+        if not self._topic_is_cached: return
 
         self._title_is_cached, self._cached_title = self._recreate_from_cached_content("CACHE_TAG_ARTICLE_TITLE") 
         if not self._title_is_cached: return

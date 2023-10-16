@@ -23,6 +23,10 @@ class BlogArticle():
 
         self._cache = BlogCache(load_from_cache_if_possible)
 
+        #if the article topic changed, invalidate the cache
+        if self._article_topic != self._cache.get_cached_article_topic():
+            self._cache.invalidate()
+            self._cache.write_cache_article(self._cache.tag_topic(), self._article_topic)
 
         #generate the entire blog article, cached or not, at the creation of the object BlogArticle
         if generate_at_init:
@@ -35,8 +39,6 @@ class BlogArticle():
 
             with open(self._output_text_file, "w") as article_file:
                 article_file.write(self._article_text_consolidated)
-
-            self._article_text_consolidated.to_html()
         
 
     def _generate_title_and_seo(self):

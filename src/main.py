@@ -23,7 +23,7 @@ logger = logging.getLogger('blogself')
 logger.info("Contacting OpenAI")
 
 llm = ChatOpenAI(model_name="gpt-3.5-turbo-16k", openai_api_key=os.getenv("OPENAI_TEST_KEY"), temperature=0)
-user_input_article_topic = "CAN Bus Demo on Arduino"
+user_input_article_topic = "How to write a blog article"
 
 logger.info("Creating the blog article from topic: " + user_input_article_topic) 
 blogself = BlogArticle(llm, user_input_article_topic, workers, logger, generate_at_init=True)
